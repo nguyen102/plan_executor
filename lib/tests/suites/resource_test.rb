@@ -93,7 +93,7 @@ module Crucible
 
         result = TestResult.new('X010',"Create new #{resource_class.name.demodulize}", nil, nil, nil)
         ignore_client_exception { @temp_resource = ResourceGenerator.generate(@resource_class,3).create }
-        @temp_version = @client.reply.version
+        @temp_version = @temp_resource.meta.versionId
 
         if @client.reply.code==201
           result.update(STATUS[:pass], "New #{resource_class.name.demodulize} was created.", @client.reply.body)
@@ -110,78 +110,78 @@ module Crucible
         result
       end
 
-      test 'X012', 'Conditional Create (No Matches)' do
-        metadata {
-          define_metadata('conditional-create')
-        }
-
-        result = TestResult.new('X012',"Conditional Create #{resource_class.name.demodulize} (No Matches)", nil, nil, nil)
-        # chances are good that no resource has this ID
-        ifNoneExist = { '_id' => "#{(SecureRandom.uuid * 2)[0..63]}" }
-        ignore_client_exception { @conditional_create_resource_a = ResourceGenerator.generate(@resource_class,3).conditional_create(ifNoneExist) }
-
-        if @client.reply.code==201
-          result.update(STATUS[:pass], "New #{resource_class.name.demodulize} was created.", @client.reply.body)
-        else
-          outcome = (self.parse_operation_outcome(@client.reply.body) rescue nil)
-          if outcome.nil?
-            message = "Response code #{@client.reply.code} with no OperationOutcome provided."
-          else
-            message = self.build_messages(outcome)
-          end
-          result.update(STATUS[:fail], message, @client.reply.body)
-        end
-
-        result
-      end
-
-
-      test 'X013', 'Conditional Create (One Match)' do
-        metadata {
-          define_metadata('conditional-create')
-        }
-
-        result = TestResult.new('X013',"Conditional Create #{resource_class.name.demodulize} (One Match)", nil, nil, nil)
-        # this ID should already exist if temp resource was created
-        if !@bundle.nil? && @bundle.is_a?(get_resource(:Bundle)) && !@bundle&.entry&.first&.resource.nil?
-          @preexisting_id = @bundle.entry[0].resource.id
-        elsif !@temp_resource.nil? && !@temp_resource.id.nil?
-          @preexisting_id = @temp_resource.id
-        else
-          raise AssertionException.new("Preexisting #{resource_class.name.demodulize} unknown.", nil)
-        end
-        ifNoneExist = { '_id' => @preexisting_id }
-        ignore_client_exception { @conditional_create_resource_b = ResourceGenerator.generate(@resource_class,3).conditional_create(ifNoneExist) }
-
-        if @client.reply.code==200
-          result.update(STATUS[:pass], "Request was correctly ignored.", @client.reply.body)
-          @conditional_create_resource_b = nil
-        else
-          result.update(STATUS[:fail], "Request should have been ignored with HTTP 200.", @client.reply.body)
-        end
-
-        result
-      end
-
-
-      test 'X014', 'Conditional Create (Multiple Matches)' do
-        metadata {
-          define_metadata('conditional-create')
-        }
-
-        result = TestResult.new('X014',"Conditional Create #{resource_class.name.demodulize}", nil, nil, nil)
-        # this should match all resources
-        ifNoneExist = { '_lastUpdated' => 'gt1900-01-01' }
-        ignore_client_exception { @conditional_create_resource_c = ResourceGenerator.generate(@resource_class,3).conditional_create(ifNoneExist) }
-
-        if @client.reply.code==412
-          result.update(STATUS[:pass], "Request correctly failed.", @client.reply.body)
-        else
-          result.update(STATUS[:fail], "Request should have failed with HTTP 412.", @client.reply.body)
-        end
-
-        result
-      end
+      # test 'X012', 'Conditional Create (No Matches)' do
+      #   metadata {
+      #     define_metadata('conditional-create')
+      #   }
+      #
+      #   result = TestResult.new('X012',"Conditional Create #{resource_class.name.demodulize} (No Matches)", nil, nil, nil)
+      #   # chances are good that no resource has this ID
+      #   ifNoneExist = { '_id' => "#{(SecureRandom.uuid * 2)[0..63]}" }
+      #   ignore_client_exception { @conditional_create_resource_a = ResourceGenerator.generate(@resource_class,3).conditional_create(ifNoneExist) }
+      #
+      #   if @client.reply.code==201
+      #     result.update(STATUS[:pass], "New #{resource_class.name.demodulize} was created.", @client.reply.body)
+      #   else
+      #     outcome = (self.parse_operation_outcome(@client.reply.body) rescue nil)
+      #     if outcome.nil?
+      #       message = "Response code #{@client.reply.code} with no OperationOutcome provided."
+      #     else
+      #       message = self.build_messages(outcome)
+      #     end
+      #     result.update(STATUS[:fail], message, @client.reply.body)
+      #   end
+      #
+      #   result
+      # end
+      #
+      #
+      # test 'X013', 'Conditional Create (One Match)' do
+      #   metadata {
+      #     define_metadata('conditional-create')
+      #   }
+      #
+      #   result = TestResult.new('X013',"Conditional Create #{resource_class.name.demodulize} (One Match)", nil, nil, nil)
+      #   # this ID should already exist if temp resource was created
+      #   if !@bundle.nil? && @bundle.is_a?(get_resource(:Bundle)) && !@bundle&.entry&.first&.resource.nil?
+      #     @preexisting_id = @bundle.entry[0].resource.id
+      #   elsif !@temp_resource.nil? && !@temp_resource.id.nil?
+      #     @preexisting_id = @temp_resource.id
+      #   else
+      #     raise AssertionException.new("Preexisting #{resource_class.name.demodulize} unknown.", nil)
+      #   end
+      #   ifNoneExist = { '_id' => @preexisting_id }
+      #   ignore_client_exception { @conditional_create_resource_b = ResourceGenerator.generate(@resource_class,3).conditional_create(ifNoneExist) }
+      #
+      #   if @client.reply.code==200
+      #     result.update(STATUS[:pass], "Request was correctly ignored.", @client.reply.body)
+      #     @conditional_create_resource_b = nil
+      #   else
+      #     result.update(STATUS[:fail], "Request should have been ignored with HTTP 200.", @client.reply.body)
+      #   end
+      #
+      #   result
+      # end
+      #
+      #
+      # test 'X014', 'Conditional Create (Multiple Matches)' do
+      #   metadata {
+      #     define_metadata('conditional-create')
+      #   }
+      #
+      #   result = TestResult.new('X014',"Conditional Create #{resource_class.name.demodulize}", nil, nil, nil)
+      #   # this should match all resources
+      #   ifNoneExist = { '_lastUpdated' => 'gt1900-01-01' }
+      #   ignore_client_exception { @conditional_create_resource_c = ResourceGenerator.generate(@resource_class,3).conditional_create(ifNoneExist) }
+      #
+      #   if @client.reply.code==412
+      #     result.update(STATUS[:pass], "Request correctly failed.", @client.reply.body)
+      #   else
+      #     result.update(STATUS[:fail], "Request should have failed with HTTP 412.", @client.reply.body)
+      #   end
+      #
+      #   result
+      # end
 
       #
       # Test if we can read a preexisting resource
@@ -283,135 +283,6 @@ module Crucible
         result
       end
 
-      test 'X032', 'Conditional Update (No Matches)' do
-        metadata {
-          define_metadata('conditional-update')
-        }
-
-        result = TestResult.new('X032',"Conditional Update #{resource_class.name.demodulize} (No Matches)", nil, nil, nil)
-
-        searchParams = { '_id' => "#{(SecureRandom.uuid * 2)[0..63]}" }
-        ignore_client_exception { @conditional_update_resource_a = ResourceGenerator.generate(@resource_class,3).conditional_update(searchParams) }
-        # chances are good that no resource has this ID
-
-        if @client.reply.code==201
-          result.update(STATUS[:pass], "New #{resource_class.name.demodulize} was created.", @client.reply.body)
-        else
-          outcome = (self.parse_operation_outcome(@client.reply.body) rescue nil)
-          if outcome.nil?
-            message = "Response code #{@client.reply.code} with no OperationOutcome provided."
-          else
-            message = self.build_messages(outcome)
-          end
-          result.update(STATUS[:fail], message, @client.reply.body)
-        end
-
-        result
-      end
-
-
-      test 'X033', 'Conditional Update (One Match)' do
-        metadata {
-          define_metadata('conditional-update')
-        }
-
-        result = TestResult.new('X033',"Conditional Update #{resource_class.name.demodulize} (One Match)", nil, nil, nil)
-        if !@temp_resource.nil? && !@temp_resource.id.nil?
-          @preexisting_id = @temp_resource.id
-          @preexisting = @temp_resource
-        elsif !@bundle&.entry&.first&.resource.nil?
-          @preexisting_id = @bundle.entry[0].resource.id
-          @preexisting = @bundle.entry[0].resource
-        end
-
-        if !@preexisting.nil?
-          begin
-            @preexisting.to_xml
-          rescue Exception
-            @preexisting = nil
-          end
-        end
-
-        if @preexisting.nil?
-          result.update(STATUS[:skip], "Unable to update -- existing #{resource_class.name.demodulize} is not available or was not valid.", nil)
-        else
-          ResourceGenerator.set_fields!(@preexisting, version_namespace.to_s, 3)
-          ResourceGenerator.apply_invariants!(@preexisting)
-
-          searchParams = { '_id' => @preexisting_id }
-          ignore_client_exception { @preexisting.conditional_update(searchParams) }
-
-          if @client.reply.code==200
-            result.update(STATUS[:pass], "Updated existing #{resource_class.name.demodulize}.", @client.reply.body)
-          elsif @client.reply.code==201
-            # check created id -- see if it matches the one we used, or is new
-            resulting_id = @client.reply.id
-
-            if(@preexisting_id != resulting_id)
-              result.update(STATUS[:fail], "Server created (201) new #{resource_class.name.demodulize} rather than update (200). A new ID (#{resulting_id}) was also created (was #{@preexisting_id}).", @client.reply.body)
-            else
-              result.update(STATUS[:fail], "The #{resource_class.name.demodulize} was successfully updated, but the server responded with the wrong code (201, but should have been 200).", @client.reply.body)
-            end
-
-            resulting_version = @client.reply.version
-            if(@preexisting_version == resulting_version)
-              result.update(STATUS[:fail], "The #{resource_class.name.demodulize} was successfully updated, but the server did not update the resource version number.", @client.reply.body)
-            end
-          else
-            outcome = self.parse_operation_outcome(@client.reply.body) rescue nil
-            if outcome.nil?
-              message = "Response code #{@client.reply.code} with no OperationOutcome provided."
-            else
-              message = self.build_messages(outcome)
-            end
-            result.update(STATUS[:fail], message, @client.reply.body)
-          end
-        end
-
-        result
-      end
-
-
-      test 'X034', 'Conditional Update (Multiple Matches)' do
-        metadata {
-          define_metadata('conditional-update')
-        }
-
-        result = TestResult.new('X034',"Conditional Update #{resource_class.name.demodulize}", nil, nil, nil)
-        searchParams = { '_lastUpdated' => 'gt1900-01-01' }
-        ignore_client_exception { @conditional_update_resource_b = ResourceGenerator.generate(@resource_class,3).conditional_update(searchParams) }
-
-        if @client.reply.code==412
-          result.update(STATUS[:pass], "Request correctly failed.", @client.reply.body)
-          @conditional_update_resource_b = nil
-        else
-          result.update(STATUS[:fail], "Request should have failed with HTTP 412.", @client.reply.body)
-        end
-        result
-      end
-
-      #
-      # Test if we can retrieve the history of a preexisting resource.
-      #
-      test 'X040', 'Read History of existing' do
-        metadata {
-          define_metadata('history')
-        }
-
-        result = TestResult.new('X040',"Read history of existing #{resource_class.name.demodulize} by ID", nil, nil, nil)
-
-        if @preexisting_id.nil?
-          result.update(STATUS[:skip], "Preexisting #{resource_class.name.demodulize} unknown.", nil)
-        else
-          @history_bundle = @resource_class.resource_instance_history(@preexisting_id)
-          if @history_bundle.nil?
-            raise AssertionException.new('Service did not respond with bundle.', nil)
-          end
-          result.update(STATUS[:pass], 'Service responded with bundle.', @client.reply.body)
-        end
-        result
-      end
-
       #
       # Test if we can read a specific version of a preexisting resource.
       #
@@ -484,169 +355,6 @@ module Crucible
         result
       end
 
-
-      #
-      # Validate the representation of a given resource.
-      #
-      # Interestingly, this functionality is deprecated in the latest "Continuous Integration" branch.
-      #
-      test 'X060', 'Validate' do
-        metadata {
-          define_metadata('$validate')
-          validates profiles: ['validate-profile']
-        }
-
-        result = TestResult.new('X060',"Validate #{resource_class.name.demodulize}", nil, nil, nil)
-
-        tres = ResourceGenerator.generate(@resource_class,3)
-        reply = @client.validate tres
-        if reply.code==200
-          result.update(STATUS[:pass], "#{resource_class.name.demodulize} was validated.", reply.body)
-        elsif reply.code==201
-          result.update(STATUS[:fail], "Server created a #{resource_class.name.demodulize} with the ID `_validate` rather than validate the resource.", reply.body)
-        else
-          outcome = self.parse_operation_outcome(reply.body) rescue nil
-          if outcome.nil?
-            message = "Response code #{reply.code} with no OperationOutcome provided."
-          else
-            message = self.build_messages(outcome)
-          end
-          result.update(STATUS[:fail], message, reply.body)
-        end
-
-        result
-      end
-
-      #
-      # Validate the representation of an existing resource.
-      #
-      # Interestingly, this functionality is deprecated in the latest "Continuous Integration" branch.
-      #
-      test 'X065', 'Validate Existing' do
-        metadata {
-          define_metadata('$validate')
-          validates profiles: ['validate-profile']
-        }
-
-        result = TestResult.new('X065',"Validate existing #{resource_class.name.demodulize}", nil, nil, nil)
-
-        if !@bundle.nil? && @bundle.is_a?(get_resource(:Bundle)) && !@bundle&.entry&.first&.resource.nil?
-          @preexisting_id = @bundle.entry[0].resource.id
-          @preexisting = @bundle.entry[0].resource
-        elsif !@temp_resource.nil? && !@temp_resource.id.nil?
-          @preexisting_id = @temp_resource.id
-          @preexisting = @temp_resource
-        end
-
-        is_preexisting_valid = false
-        if !@preexisting.nil?
-          begin
-            @preexisting.to_xml
-            is_preexisting_valid = @preexisting.valid?
-            profile = get_resource(:Definitions).resource_definition("#{resource_class.name.demodulize}")
-            if !profile.nil?
-              is_preexisting_valid &&= profile.validates_resource?(@preexisting)
-            end
-          rescue Exception
-            @preexisting = nil
-            is_preexisting_valid = false
-          end
-        end
-
-        if @preexisting.nil?
-          result.update(STATUS[:skip], "Unable to validate -- existing #{resource_class.name.demodulize} is not available or was not valid.", nil)
-        else
-          # ResourceGenerator.set_fields!(@preexisting, version_namespace.to_s, 3)
-          # ResourceGenerator.apply_invariants!(@preexisting)
-
-          reply = @client.validate_existing(@preexisting, @preexisting_id)
-
-          if reply.code==200
-            result.update(STATUS[:pass], "Existing #{resource_class.name.demodulize} was validated.", reply.body)
-          elsif reply.code==201
-            result.update(STATUS[:fail], "Server created a #{resource_class.name.demodulize} with the ID `_validate` rather than validate the resource.", reply.body)
-          elsif (400..499).include?(reply.code)
-            outcome = self.parse_operation_outcome(reply.body) rescue nil
-
-            if outcome.nil?
-              message = "Response code #{reply.code} with no OperationOutcome provided."
-              result.update(STATUS[:fail], message, reply.body)
-            else
-              message = self.build_messages(outcome)
-              invalid_codes = ['invalid','structure','required','value','invariant']
-              security_codes = ['security','login','unknown','expired','forbidden','suppressed']
-              processing_codes = ['processing','not-supported','duplicate','not-found','too-long','code-invalid','extension','too-costly','business-rule','conflict','incomplete']
-              transient_codes = ['transient','lock-error','no-store','exception','timeout','throttled']
-
-              status = :pass
-              if is_preexisting_valid
-                outcome.issue.each do |issue|
-                  if ['fatal','error'].include?(issue.severity)
-                    status = :fail if security_codes.include?(issue.code) || transient_codes.include?(issue.code)
-                  end
-                end
-              else
-                message = "Server correctly rejected invalid preexisting resource."
-              end
-              result.update(STATUS[status], message, reply.body)
-            end
-          else
-            outcome = self.parse_operation_outcome(reply.body) rescue nil
-            if outcome.nil?
-              message = "Response code #{reply.code} with no OperationOutcome provided."
-            else
-              message = self.build_messages(outcome)
-            end
-            result.update(STATUS[:fail], message, reply.body)
-          end
-        end
-
-        result
-      end
-
-      #
-      # Validate the representation of a resource against a given profile.
-      #
-      # The client can ask the server to validate against a particular resource by attaching a profile tag to the resource.
-      # This is an assertion that the resource conforms to the specified profile(s), and the server can check this.
-      #
-      # Profile Tag has an HTTP header named "Category" with three parts:
-      #   scheme: [uri]    "http://hl7.org/fhir/tag/profile"
-      #   term:   [uri]    In a profile tag, the term is a URL that references a profile resource.
-      #   label:  [string] (optional) A human-readable label for the tag for use when displaying in end-user applications
-      #
-      # Category: [Tag Term]; scheme="[Tag Scheme]"; label="[Tag label]"(, ...)
-      #
-      # Interestingly, this functionality is deprecated in the latest "Continuous Integration" branch.
-      #
-      test 'X067', 'Validate against a profile' do
-        metadata {
-          define_metadata('$validate')
-          validates profiles: ['validate-profile']
-        }
-
-        profile_uri = "http://hl7.org/fhir/StructureDefinition/#{resource_class.name.demodulize}" # the profile to validate with
-
-        result = TestResult.new('X067',"Validate #{resource_class.name.demodulize} against a profile", nil, nil, nil)
-
-        tres = ResourceGenerator.generate(@resource_class,3)
-        reply = @client.validate(tres,{profile_uri: profile_uri})
-        if reply.code==200
-          result.update(STATUS[:pass], "#{resource_class.name.demodulize} was validated.", reply.body)
-        elsif reply.code==201
-          result.update(STATUS[:fail], "Server created a #{resource_class.name.demodulize} with the ID `_validate` rather than validate the resource.", reply.body)
-        else
-          outcome = self.parse_operation_outcome(reply.body) rescue nil
-          if outcome.nil?
-            message = "Response code #{reply.code} with no OperationOutcome provided."
-          else
-            message = self.build_messages(outcome)
-          end
-          result.update(STATUS[:fail], message, reply.body)
-        end
-
-        result
-      end
 
       #
       # Test if we can delete a preexisting resource.

@@ -5,15 +5,15 @@ module Crucible
       attr_accessor :resource_class
       attr_accessor :conformance
       attr_accessor :searchParams
-      attr_reader   :canSearchById
+      attr_reader :canSearchById
 
-      def execute(resource_class=nil)
+      def execute(resource_class = nil)
         if resource_class
           @resource_class = resource_class
           {"SearchTest_#{@resource_class.name.demodulize}" => execute_test_methods}
         else
           results = {}
-          Crucible::Tests::BaseSuite.fhir_resources.each do | klass |
+          Crucible::Tests::BaseSuite.fhir_resources.each do |klass|
             @resource_class = klass
             results.merge!({"SearchTest_#{@resource_class.name.demodulize}" => execute_test_methods})
           end
@@ -36,7 +36,7 @@ module Crucible
         {id: "search_#{resource.parameterize}", title: "#{resource} Search"}
       end
 
-      def initialize(client1, client2=nil)
+      def initialize(client1, client2 = nil)
         super(client1, client2)
       end
 
@@ -63,56 +63,15 @@ module Crucible
         unless @conformance.nil?
           @conformance.rest.each do |rest|
             rest.resource.each do |resource|
-              @searchParams = resource.searchParam if(resource.type.downcase == "#{@resource_class.name.demodulize.downcase}" )
+              @searchParams = resource.searchParam if (resource.type.downcase == "#{@resource_class.name.demodulize.downcase}")
             end
           end
         end
 
-        index = @searchParams.find_index {|item| item.name=="_id" } if !@searchParams.nil?
+        index = @searchParams.find_index { |item| item.name == "_id" } if !@searchParams.nil?
         @canSearchById = !index.nil?
       end
 
-      test 'S000', 'Compare supported search parameters with specification' do
-        metadata {
-          define_metadata('search')
-        }
-        searchParamNames = []
-        searchParamNames = @searchParams.map { |item| item.name } if !@searchParams.nil?
-        searchParamsDiff = @resource_class::SEARCH_PARAMS-searchParamNames 
-        assert (searchParamsDiff.size <= 0), "The server does not support the following params: #{searchParamsDiff.join(', ')}."
-      end
-
-      #
-      # Test the extent of the search capabilities supported.
-      # x  no criteria [SE01]
-      # x  limit by _count [S003]
-      # x  non-existing resource [SE02]
-      # x  id [S001,S002]
-      # x  parameters [SE03,SE04]
-      # x  parameters [SE24,SE25]
-      # parameter modifiers (
-      # x  :missing, [SE23]
-      # :exact,
-      # :text,
-      # :[type])
-      # x  numbers (= >= significant-digits) [SE21,SE22]
-      # date (all of the permutations?)
-      # token
-      # x  quantities [SE21,SE22]
-      # x  references [SE05]
-      # chained parameters
-      # composite parameters
-      # text search logical operators
-      # tags [TA08], profile, security label
-      # _filter parameter
-      # result relevance
-      # result sorting (_sort parameter)
-      # result paging
-      # x  _include parameter [SE06]
-      # _summary parameter
-      # result server conformance (report params actually used)
-      # advanced searching with "Query" or _query param (valueset 'expand' and 'validate' queries should be standard)
-      #
 
       # Parameters for all resources
       #   _id
@@ -133,85 +92,69 @@ module Crucible
       #   _elements
       #   _contained
       #   _containedType
-      
-    [true,false].each do |flag|  
-      action = 'GET'
-      action = 'POST' if flag
 
-      test "S001#{action[0]}", "Search by ID (#{action})" do
-        metadata {
-          define_metadata('search')
-        }
-        options = {
-          :search => {
-            :flag => flag,
-            :compartment => nil,
-            :parameters => {
-              '_id' => '0'
-            }
+      # If want to search on post set `[true,false].each do |flag|`
+      # [true,false].each do |flag|
+      [false].each do |flag|
+        action = 'GET'
+        action = 'POST' if flag
+
+        test "S003#{action[0]}", "Search limit by _count (#{action})" do
+          metadata {
+            define_metadata('search')
           }
-        }
-        reply = @client.search(@resource_class, options)
-        assert_response_ok(reply)
-        assert_bundle_response(reply)
-      end
-
-      test "S003#{action[0]}", "Search limit by _count (#{action})" do
-        metadata {
-          define_metadata('search')
-        }
-        options = {
-          :search => {
-            :flag => flag,
-            :compartment => nil,
-            :parameters => {
-              '_count' => '1'
-            }
+          options = {
+              :search => {
+                  :flag => flag,
+                  :compartment => nil,
+                  :parameters => {
+                      '_count' => '1'
+                  }
+              }
           }
-        }
-        reply = @client.search(@resource_class, options)
-        assert_response_ok(reply)
-        assert_bundle_response(reply)
-        assert (1 >= reply.resource.entry.size), 'The server did not return the correct number of results.'
-      end
+          reply = @client.search(@resource_class, options)
+          assert_response_ok(reply)
+          assert_bundle_response(reply)
+          assert (1 >= reply.resource.entry.size), 'The server did not return the correct number of results.'
+        end
 
-      # ********************************************************* #
-      # _____________________Sprinkler Tests_____________________ #
-      # ********************************************************* #
+        # ********************************************************* #
+        # _____________________Sprinkler Tests_____________________ #
+        # ********************************************************* #
 
-      test "SE01#{action[0]}", "Search without criteria (#{action})" do
-        metadata {
-          links "#{BASE_SPEC_LINK}/#{resource_class.name.demodulize.downcase}.html"
-          links "#{REST_SPEC_LINK}#search"
-          links "#{REST_SPEC_LINK}#read"
-          validates resource: resource_class.name.demodulize, methods: ['read', 'search']
-        }
-        options = {
-          :search => {
-            :flag => flag,
-            :compartment => nil,
-            :parameters => nil
+        test "SE01#{action[0]}", "Search without criteria (#{action})" do
+          metadata {
+            links "#{BASE_SPEC_LINK}/#{resource_class.name.demodulize.downcase}.html"
+            links "#{REST_SPEC_LINK}#search"
+            links "#{REST_SPEC_LINK}#read"
+            validates resource: resource_class.name.demodulize, methods: ['read', 'search']
           }
-        }
-        reply = @client.search(@resource_class, options)
-        assert_response_ok(reply)
-        assert_bundle_response(reply)
+          options = {
+              :search => {
+                  :flag => flag,
+                  :compartment => nil,
+                  :parameters => nil
+              }
+          }
+          reply = @client.search(@resource_class, options)
+          assert_response_ok(reply)
+          assert_bundle_response(reply)
 
-        replyB = @client.read_feed(@resource_class)
+          replyB = @client.read_feed(@resource_class)
 
-        # AuditEvent
-        if resource_class == get_resource(:AuditEvent)
-          count = (reply.resource.total-replyB.resource.total).abs
-          assert (count <= 1), 'Searching without criteria did not return all the results.'
-        else
-          assert !replyB.resource.nil?, 'Searching without criteria did not return any results.'
-          assert !reply.resource.nil?, 'Searching without criteria did not return any results.'
-          assert !replyB.resource.total.nil?, 'Search bundle returned does not report a total entry count.'
-          assert !reply.resource.total.nil?, 'Search bundle returned does not report a total entry count.'
-          assert_equal replyB.resource.total, reply.resource.total, 'Searching without criteria did not return all the results.'
+          # AuditEvent
+          if resource_class == get_resource(:AuditEvent)
+            count = (reply.resource.total - replyB.resource.total).abs
+            assert (count <= 1), 'Searching without criteria did not return all the results.'
+          else
+            assert !replyB.resource.nil?, 'Searching without criteria did not return any results.'
+            assert !reply.resource.nil?, 'Searching without criteria did not return any results.'
+            assert !replyB.resource.total.nil?, 'Search bundle returned does not report a total entry count.'
+            assert !reply.resource.total.nil?, 'Search bundle returned does not report a total entry count.'
+            assert_equal replyB.resource.total, reply.resource.total, 'Searching without criteria did not return all the results.'
+          end
         end
       end
-    end
 
       def define_metadata(method)
         links "#{REST_SPEC_LINK}##{method}"

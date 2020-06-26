@@ -89,21 +89,24 @@ namespace :crucible do
     puts "TestReport completed in #{b.real} seconds."
   end
 
+  desc 'execute_hearth_tests'
+  task :execute_hearth_tests, [:url, :x_api_key, :bearer_token] do |t, args|
+
+    tests = [{'test_name' => 'ReadTest'}, {'test_name' => 'ResourceTest', 'resource' => 'Patient'},
+             {'test_name' => 'SearchTest', 'resource' => 'Patient'}, {'test_name' => 'SprinklerSearchTest'},
+             {'test_name' => 'TransactionAndBatchTest'}]
+
+    tests.each do |test|
+      test_name = test['test_name']
+      resource = test['resource'] || ''
+      # TODO: Grab test result and parse it to see if all tests failed or passed
+      execute(args.url, args.x_api_key, args.bearer_token, 'r4', test_name, resource)
+    end
+  end
+
   desc 'execute'
-  task :execute, [:url, :fhir_version, :test, :resource] do |t, args|
-    FHIR.logger = Logger.new("logs/plan_executor.log", 10, 1024000)
-    fhir_version = resolve_fhir_version(args.fhir_version)
-    require 'benchmark'
-    b = Benchmark.measure {
-      client = FHIR::Client.new(args.url)
-      client.use_r4
-      client.use_stu3 if fhir_version == :stu3
-      client.use_dstu2 if fhir_version == :dstu2
-      options = client.get_oauth2_metadata_from_conformance
-      set_client_secrets(client,options) unless options.empty?
-      execute_test(client, args.test, args.resource)
-    }
-    puts "Execute #{args.test} completed in #{b.real} seconds."
+  task :execute, [:url, :x_api_key, :bearer_token, :fhir_version, :test, :resource] do |t, args|
+    execute(args.url, args.x_api_key, args.bearer_token, args.fhir_version, args.test, args.resource)
   end
 
   desc 'metadata'
@@ -112,6 +115,26 @@ namespace :crucible do
     require 'benchmark'
     b = Benchmark.measure { puts JSON.pretty_unparse(Crucible::Tests::Executor.new(nil).extract_metadata_from_test(args.test)) }
     puts "Metadata #{args.test} completed in #{b.real} seconds."
+  end
+
+  def execute(url, x_api_key, bearer_token, fhir_version, test, resource)
+    FHIR.logger = Logger.new("logs/plan_executor.log", 10, 1024000)
+    fhir_version = resolve_fhir_version(fhir_version)
+    results = {}
+    require 'benchmark'
+    b = Benchmark.measure {
+      client = FHIR::Client.new(url)
+      client.additional_headers = {'x-api-key': x_api_key}
+      client.set_bearer_token(bearer_token) if bearer_token
+
+      client.use_r4
+      client.use_stu3 if fhir_version == :stu3
+      client.use_dstu2 if fhir_version == :dstu2
+      options = client.get_oauth2_metadata_from_conformance
+      set_client_secrets(client,options) unless options.empty?
+      execute_test(client, test, resource)
+    }
+    puts "Execute #{test} completed in #{b.real} seconds."
   end
 
   def resolve_fhir_version(version_string)
@@ -180,6 +203,7 @@ namespace :crucible do
       suite = results[suite_key]
       suite = convert_testreport_to_testresults(suite) if suite.is_a?(FHIR::TestReport)
       suite.each do |test|
+        # TODO Record the values here of a test, to parse it to see if any tests failed
         puts write_result(test['status'], test[:test_method], test['message'])
         if test['status'].upcase=='ERROR' && test['data']
           puts " "*12 + "-"*40
