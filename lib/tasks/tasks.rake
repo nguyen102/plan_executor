@@ -92,17 +92,42 @@ namespace :crucible do
   desc 'execute_hearth_tests'
   task :execute_hearth_tests, [:url, :x_api_key, :bearer_token] do |t, args|
 
-    tests = [{'test_name' => 'ReadTest'}, {'test_name' => 'ResourceTest', 'resource' => 'Patient'},
-             {'test_name' => 'SearchTest', 'resource' => 'Patient'}, {'test_name' => 'SprinklerSearchTest'},
-             {'test_name' => 'TransactionAndBatchTest'}]
+    test_suites = [{:test_suite_name => 'ReadTest'}, {:test_suite_name => 'ResourceTest', :resource => 'Patient'},
+                   {:test_suite_name => 'SearchTest', :resource => 'Patient'}, {:test_suite_name => 'SprinklerSearchTest'},
+                   {:test_suite_name => 'TransactionAndBatchTest'}]
 
-    tests.each do |test|
-      test_name = test['test_name']
-      resource = test['resource'] || ''
-      # TODO: Grab test result and parse it to see if all tests failed or passed
-      execute(args.url, args.x_api_key, args.bearer_token, 'r4', test_name, resource)
+    all_test_suites_passed = true
+    test_suites.each do |test_suite|
+      test_suite_name = test_suite[:test_suite_name]
+      resource = test_suite[:resource] || ''
+      test_report = execute(args.url, args.x_api_key, args.bearer_token, 'r4', test_suite_name, resource)
+      if !parse_test_result(test_report)
+        all_test_suites_passed = false
+      end
+    end
+
+    if all_test_suites_passed
+      puts "All Test Suites Passed"
+    else
+      puts "Atleast one test suite failed"
+      # Return exit code so we can use this as part of a testing script. Based on the exit status we will know if the
+      # tests failed or not
+      exit 1
     end
   end
+
+  def parse_test_result test_report
+    all_tests_passed = true
+    test_report.keys.each do |test_suite_name|
+      test_report[test_suite_name].each do |test|
+        if test['status'] == 'fail'
+          all_tests_passed = false
+        end
+      end
+    end
+    all_tests_passed
+  end
+
 
   desc 'execute'
   task :execute, [:url, :x_api_key, :bearer_token, :fhir_version, :test, :resource] do |t, args|
@@ -132,9 +157,10 @@ namespace :crucible do
       client.use_dstu2 if fhir_version == :dstu2
       options = client.get_oauth2_metadata_from_conformance
       set_client_secrets(client,options) unless options.empty?
-      execute_test(client, test, resource)
+      results = execute_test(client, test, resource)
     }
     puts "Execute #{test} completed in #{b.real} seconds."
+    results
   end
 
   def resolve_fhir_version(version_string)
@@ -181,6 +207,7 @@ namespace :crucible do
     end
     results = executor.execute(test) if results.nil?
     output_results results
+    results
   end
 
   def execute_all(client)

@@ -90,24 +90,6 @@ module Crucible
         ignore_client_exception { get_resource(:Patient).read('Invalid-ID-Because_Of_!@$Special_Characters_and_Length_Over_Sixty_Four_Characters') }
         assert(([400,404].include?(@client.reply.code)), "Expecting 400 since invalid id, or 404 since unknown resource.  Returned #{@client.reply.code}." )
       end
-
-      # test 'R005', 'Read _summary=text' do
-      #   metadata {
-      #     links "#{REST_SPEC_LINK}#read"
-      #     links "#{BASE_SPEC_LINK}/datatypes.html#id"
-      #     links "#{BASE_SPEC_LINK}/resource.html#id"
-      #     requires resource: "Patient", methods: ["create", "read", "delete"]
-      #     validates resource: "Patient", methods: ["read"]
-      #   }
-      #   skip 'Patient not created in setup.' if @patient.nil?
-      #
-      #   @summary_patient = nil
-      #
-      #   ignore_client_exception { @summary_patient = get_resource(:Patient).read_with_summary(@patient.id, "text") }
-      #   assert(@summary_patient != nil, 'Patient resource type not returned.')
-      #   assert(@summary_patient.respond_to?(:text), 'Requested summary narrative was not provided.', @client.reply.body)
-      # end
-
     end
   end
 end
