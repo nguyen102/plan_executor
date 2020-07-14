@@ -46,15 +46,17 @@ module Crucible
         end
 
         # create a condition matching the first patient
-        @condition = ResourceGenerator.generate(get_resource(:Condition),3)
-        if fhir_version == :dstu2
-          @condition.patient = @entries.first.try(:resource).try(:to_reference)
-        else
-          @condition.subject = @entries.first.try(:resource).try(:to_reference)
-        end
-
-        reply = @client.create(@condition)
-        @condition_id = reply.id
+        # @condition = ResourceGenerator.generate(get_resource(:Condition),3)
+        # if fhir_version == :dstu2
+        #   @condition.patient = @entries.first.try(:resource).try(:to_reference)
+        # else
+        #   @condition.subject = @entries.first.try(:resource).try(:to_reference)
+        # end
+        #
+        # reply = @client.create(@condition)
+        # @condition_id = reply.id
+        # puts "Condition Id #{@condition_id}"
+        # puts "Client response #{@client.reply.inspect}"
 
         # create some observations
         @obs_a = create_observation(2.0)
@@ -142,38 +144,39 @@ module Crucible
         assert( (reply.code >= 400 && reply.code < 600), 'If the search fails, the return value should be status code 4xx or 5xx.', reply)
       end
 
-      test "SE05.1#{action[0]}", 'Search condition by patient reference id' do
-        metadata {
-          links "#{REST_SPEC_LINK}#search"
-          links "#{BASE_SPEC_LINK}/search.html"
-          links "#{BASE_SPEC_LINK}/condition.html#search"
-          validates resource: "Condition", methods: ["search"]
-        }
-        skip 'Could not find a patient to search on in setup.' unless @read_entire_feed
-        # pick some search parameters... we previously created
-        patient_id = @entries[0].resource.id
-
-        # next, we're going execute a series of searches for conditions referencing the patient
-        options = {
-          :search => {
-            :flag => flag,
-            :compartment => nil,
-            :parameters => {
-              'patient' => patient_id
-            }
-          }
-        }
-        reply = @client.search(get_resource(:Condition), options)
-        assert_response_ok(reply)
-        assert_bundle_response(reply)
-        reply.resource.entry.each do |e|
-          if fhir_version == :dstu2
-            assert((e.resource.patient.reference == @entries.first.resource.to_reference.reference),"The search returned a Condition that doesn't match the Patient.")
-          else
-            assert((e.resource.subject.reference == @entries.first.resource.to_reference.reference),"The search returned a Condition that doesn't match the Patient.")
-          end
-        end
-      end
+      # test "SE05.1#{action[0]}", 'Search condition by patient reference id' do
+      #   metadata {
+      #     links "#{REST_SPEC_LINK}#search"
+      #     links "#{BASE_SPEC_LINK}/search.html"
+      #     links "#{BASE_SPEC_LINK}/condition.html#search"
+      #     validates resource: "Condition", methods: ["search"]
+      #   }
+      #   skip 'Could not find a patient to search on in setup.' unless @read_entire_feed
+      #   # pick some search parameters... we previously created
+      #   patient_id = @entries[0].resource.id
+      #
+      #   # next, we're going execute a series of searches for conditions referencing the patient
+      #   options = {
+      #     :search => {
+      #       :flag => flag,
+      #       :compartment => nil,
+      #       :parameters => {
+      #         'patient' => patient_id
+      #       }
+      #     }
+      #   }
+      #   reply = @client.search(get_resource(:Condition), options)
+      #   puts "Search #{reply.inspect}"
+      #   assert_response_ok(reply)
+      #   assert_bundle_response(reply)
+      #   reply.resource.entry.each do |e|
+      #     if fhir_version == :dstu2
+      #       assert((e.resource.patient.reference == @entries.first.resource.to_reference.reference),"The search returned a Condition that doesn't match the Patient.")
+      #     else
+      #       assert((e.resource.subject.reference == @entries.first.resource.to_reference.reference),"The search returned a Condition that doesn't match the Patient.")
+      #     end
+      #   end
+      # end
 
       test "SE24#{action[0]}", 'Search with non-existing parameter' do
         metadata {
