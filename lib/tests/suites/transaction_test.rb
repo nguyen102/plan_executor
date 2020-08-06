@@ -358,7 +358,7 @@ module Crucible
         @client.begin_transaction
         @client.add_transaction_request('DELETE', "Patient/#{@patient0.id}") if @patient0 && !@patient0.id.nil?
         @client.add_transaction_request('DELETE', "Condition/#{@condition0.id}") if @condition0 && !@condition0.id.nil?
-        @client.add_transaction_request('DELETE', "Condition/#{@conditionId}") if @conditionId
+        @client.add_transaction_request('DELETE', "Condition/#{@conditionId}") if @conditionId && @conditionId != @condition0.id
         @client.add_transaction_request('DELETE', "Observation/#{@obs4.id}") if @obs4 && !@obs4.id.nil?
         @client.add_transaction_request('DELETE', "Observation/#{@obs3.id}") if @obs3 && !@obs3.id.nil?
         @client.add_transaction_request('DELETE', "Observation/#{@obs0a.id}") if @obs0a && !@obs0a.id.nil?
