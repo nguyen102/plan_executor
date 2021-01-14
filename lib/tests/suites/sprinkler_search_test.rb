@@ -178,49 +178,49 @@ module Crucible
       #   end
       # end
 
-      test "SE24#{action[0]}", 'Search with non-existing parameter' do
-        metadata {
-          links "#{REST_SPEC_LINK}#search"
-          links "#{BASE_SPEC_LINK}/search.html"
-          links "#{BASE_SPEC_LINK}/patient.html#search"
-          validates resource: "Patient", methods: ["search"]
-        }
-        # non-existing parameters should be ignored
-        options = {
-          :search => {
-            :flag => flag,
-            :compartment => nil,
-            :parameters => {
-              'bonkers' => 'foobar'
-            }
-          }
-        }
-        reply = @client.search(get_resource(:Patient), options)
-        assert_response_ok(reply)
-        assert_bundle_response(reply)
-      end
+#       test "SE24#{action[0]}", 'Search with non-existing parameter' do
+#         metadata {
+#           links "#{REST_SPEC_LINK}#search"
+#           links "#{BASE_SPEC_LINK}/search.html"
+#           links "#{BASE_SPEC_LINK}/patient.html#search"
+#           validates resource: "Patient", methods: ["search"]
+#         }
+#         # non-existing parameters should be ignored
+#         options = {
+#           :search => {
+#             :flag => flag,
+#             :compartment => nil,
+#             :parameters => {
+#               'bonkers' => 'foobar'
+#             }
+#           }
+#         }
+#         reply = @client.search(get_resource(:Patient), options)
+#         assert_response_ok(reply)
+#         assert_bundle_response(reply)
+#       end
 
-      test "SE25#{action[0]}", 'Search with malformed parameters' do
-        metadata {
-          links "#{REST_SPEC_LINK}#search"
-          links "#{BASE_SPEC_LINK}/search.html"
-          links "#{BASE_SPEC_LINK}/patient.html#search"
-          validates resource: "Patient", methods: ["search"]
-        }
-        # a malformed parameters are non-existing parameters, and they should be ignored
-        options = {
-          :search => {
-            :flag => flag,
-            :compartment => nil,
-            :parameters => {
-              '...' => 'foobar'
-            }
-          }
-        }
-        reply = @client.search(get_resource(:Patient), options)
-        assert_response_ok(reply)
-        assert_bundle_response(reply)
-      end
+#       test "SE25#{action[0]}", 'Search with malformed parameters' do
+#         metadata {
+#           links "#{REST_SPEC_LINK}#search"
+#           links "#{BASE_SPEC_LINK}/search.html"
+#           links "#{BASE_SPEC_LINK}/patient.html#search"
+#           validates resource: "Patient", methods: ["search"]
+#         }
+#         # a malformed parameters are non-existing parameters, and they should be ignored
+#         options = {
+#           :search => {
+#             :flag => flag,
+#             :compartment => nil,
+#             :parameters => {
+#               '...' => 'foobar'
+#             }
+#           }
+#         }
+#         reply = @client.search(get_resource(:Patient), options)
+#         assert_response_ok(reply)
+#         assert_bundle_response(reply)
+#       end
 
     end # EOF [true,false].each
 
