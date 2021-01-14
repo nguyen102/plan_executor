@@ -18,6 +18,11 @@ List all the available Test Suites, excluding supported `TestScripts`. Pass the 
 ```
 $ bundle exec rake crucible:list_suites[dstu2]
 ```
+## Running FWoA specific tests
+
+To run tests against [FWoA](https://github.com/awslabs/fhir-works-on-aws-deployment) with [RBAC](https://github.com/awslabs/fhir-works-on-aws-authz-rbac) for Auth. 
+
+`bundle exec rake crucible:execute_hearth_tests[$SERVICE_URL,$API_KEY,$ACCESS_TOKEN]`
 
 ## Executing a Test Suite
 
